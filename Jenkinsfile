@@ -1,11 +1,32 @@
 node {
     stage('Build') {
-        echo 'Building....'
+        node {
+            checkout scm
+            sh 'make'
+            stash includes: '**/target/*.jar', name: 'app' 
+        }
     }
+
     stage('Test') {
-        echo 'Testing....'
-    }
-    stage('Deploy') {
-        echo 'Deploying....'
+        node('linux') { 
+            checkout scm
+            try {
+                unstash 'app' 
+                sh 'make check'
+            }
+            finally {
+                junit '**/target/*.xml'
+            }
+        }
+        node('windows') {
+            checkout scm
+            try {
+                unstash 'app'
+                bat 'make check' 
+            }
+            finally {
+                junit '**/target/*.xml'
+            }
+        }
     }
 }
